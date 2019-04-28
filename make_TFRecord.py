@@ -14,22 +14,19 @@ import os
 import cv2
 import random as r
 import scipy.io as scio
-import pandas as pd
 
 MAT_KEY = "DE_time"
-TRAIN_DATASET_DIR = "/home/jochen/test/train_data"
+TRAIN_DATASET_DIR = "/home/cat/test/train_data"
 TFRECORDS_FILENAME = 'test.tfrecords'
 
 ## Variable Set for training
-IMG_SIZE = 64
+IMG_SIZE = 42
 
 ## read_TRFecord function
 ## turn on : 1 / turn off : 0
 CHECK = 1
 
 ## you can change the "change_value" function on your design.
-
-TEST = []
 
 def show_message(s):
     for i in range(len(s)+10):
@@ -55,25 +52,12 @@ def read_matlab_file(filename):
         if s.find(MAT_KEY) > 0:
             return data[s]
 
-def change_value_1(mvalue):
+def change_value(mvalue):
     #sigmoid = 1 / (1 + np.exp(-mvalue))
     new_value = mvalue * 255
     new_value = np.around(new_value,0)
 
     return np.uint8(abs(new_value))
-
-def change_value(mvalue):
-    # -20 ~ 20 => 0 ~ 40 => 41 vs 42
-    value = mvalue * int((IMG_SIZE)/2-2) + int((IMG_SIZE)/2-2)
-    value = np.uint8(abs(np.around(value,0)))
-    new_value = np.zeros((IMG_SIZE,IMG_SIZE),dtype=np.uint8)
-
-    ## pictures value
-    for i in range(IMG_SIZE):
-        new_value[value[i]][i] = 255
-    new_value = new_value.flatten()
-
-    return new_value
 
 def convert_to_TFRecords(values, labels):
     n_samples = len(labels)
@@ -88,8 +72,8 @@ def convert_to_TFRecords(values, labels):
                 show_message("Error image:"+values[i])
             label = int(labels[i])
 
-            for j in range(int(len(value)/IMG_SIZE)):
-                mvalue = (value[IMG_SIZE*j:IMG_SIZE*(j+1)]).flatten()
+            for j in range(int(len(value)/(IMG_SIZE*IMG_SIZE))):
+                mvalue = (value[IMG_SIZE*IMG_SIZE*j:IMG_SIZE*IMG_SIZE*(j+1)]).flatten()
                 mvalue = change_value(mvalue)
                 mvalue = mvalue.tostring()
 
@@ -118,13 +102,6 @@ def read_TFRecords():
         image_Id = np.fromstring(image_string, dtype=np.uint8)
         infile.write(str(label)+":")
         infile.write(str(image_Id)+"\n")
-    # select = pd.Series(image_Id)
-    # print(select)
-    # itemindex = np.argwhere(image_Id == 1)
-    # print(itemindex)
-    print(len(image_string))
-    image = image_Id.reshape(IMG_SIZE,IMG_SIZE)
-    cv2.imwrite("test.jpg",image)
 
     infile.close()
 
@@ -174,12 +151,6 @@ def get_File():
 if __name__ == "__main__" :
     images, labels = get_File()
     convert_to_TFRecords(images,labels)
-    # try:
-    #     convert_to_TFRecords(images,labels)
-    #     show_message("Convert Done!")
-    # except Exception as e:
-    #     show_message("Fail to convert!")
-    #     print(e)
     if(CHECK):
         read_TFRecords()
     
